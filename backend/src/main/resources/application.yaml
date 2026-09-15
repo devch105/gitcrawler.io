@@ -1,3 +1,22 @@
 spring:
-  application:
-    name: backend
+  datasource:
+    url: jdbc:postgresql://localhost:5433/gitcrawler
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        model: gpt-4o-mini
+      embedding:
+        model: text-embedding-3-small
