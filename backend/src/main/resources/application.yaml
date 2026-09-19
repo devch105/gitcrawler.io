@@ -20,3 +20,50 @@ spring:
         model: gpt-4o-mini
       embedding:
         model: text-embedding-3-small
+
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1536
+
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - read:user
+              - user:email
+              - repo
+            user-name-attribute: id
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+
+  encryption:
+    password: ${ENCRYPTION_PASSWORD:gitcrawler-dev-secret}
+    salt: ${ENCRYPTION_SALT:9f86d081884c7d65}
+
+  indexing:
+    max-file-bytes: 102400
+    chunk-size: 800
+    chunk-overlap: 100
+
+  github:
+    api-delay-ms: 50
+
+server:
+  servlet:
+    session:
+      timeout: 30m
+
+    cookie:
+      name: GITCRAWLER_SESSION
+      http-only: true
+      secure: false
+      same-site: lax
+      path: /
