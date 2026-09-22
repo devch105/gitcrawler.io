@@ -1,10 +1,8 @@
-import Image from "next/image";
-import { ModeToggle } from '../components/ui/mode-toggle';
+// src/app/page.tsx
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <ModeToggle/>
-    </div>
-  );
+export default async function RootPage() {
+  const user = await getSession();
+  redirect(user ? "/dashboard" : "/login");
 }
