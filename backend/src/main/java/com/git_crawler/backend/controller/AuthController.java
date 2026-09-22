@@ -12,33 +12,30 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
 
 @RestController
-@RequestMapping("/auth/")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
     private final CurrentUser currentUser;
 
-
-    @GetMapping("login")
-    public Map<String,String> loginUrl() {
-        return Map.of("url", "/oauth2/authorization/github");
-    }
-
     @GetMapping("/me")
-    public ResponseEntity<UserResponseDTO> me(){
-        AppUserPrincipal loggedUser = currentUser.require();
-        if(loggedUser == null){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+    public ResponseEntity<UserResponseDTO> me() {
+
+        AppUserPrincipal loggedUser =
+                currentUser.require();
+
         User user = loggedUser.getUser();
-        return  ResponseEntity.ok(new UserResponseDTO(
-                user.getId(),
-                user.getGithubId(),
-                user.getGithubUsername(),
-                user.getDisplayName(),
-                user.getAvatarUrl()
-        ));
+
+        return ResponseEntity.ok(
+                new UserResponseDTO(
+                        user.getId(),
+                        user.getGithubId(),
+                        user.getGithubUsername(),
+                        user.getDisplayName(),
+                        user.getAvatarUrl()
+                )
+        );
     }
 }

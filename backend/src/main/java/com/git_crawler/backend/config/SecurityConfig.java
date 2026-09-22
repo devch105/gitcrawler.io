@@ -45,7 +45,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers(
                                 "/",
-                                "/auth/**",
+                                "/auth/login",
                                 "/login/**",
                                 "/oauth2/**",
                                 "/error",
@@ -58,10 +58,11 @@ public class SecurityConfig {
                                 "/**"
                         ).permitAll()
 
+                        // Current user requires authentication
+                        .requestMatchers("/auth/me").authenticated()
+
                         // API requires authentication
-                        .requestMatchers(
-                                "/api/**"
-                        ).authenticated()
+                        .requestMatchers("/api/**").authenticated()
 
                         // Everything else
                         .anyRequest().permitAll()

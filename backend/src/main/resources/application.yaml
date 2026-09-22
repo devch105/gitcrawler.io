@@ -37,12 +37,12 @@ spring:
             client-secret: ${GITHUB_CLIENT_SECRET}
             scope:
               - read:user
-              - user:email
+             # - user:email
               - repo
             user-name-attribute: id
 
 app:
-  frontend-url: ${FRONTEND_URL:http://10.111.35.143:3000}
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
 
   encryption:
     password: ${ENCRYPTION_PASSWORD:gitcrawler-dev-secret}

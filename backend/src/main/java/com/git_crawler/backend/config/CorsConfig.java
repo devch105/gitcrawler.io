@@ -10,7 +10,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
-public class AppConfig {
+public class CorsConfig {
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -49,15 +49,15 @@ public class AppConfig {
         // Allow session cookies
         configuration.setAllowCredentials(true);
 
-        // Headers exposed to frontend
-        configuration.setExposedHeaders(
-                List.of(
-                        "Set-Cookie"
-                )
-        );
-
-        // Cache preflight response
-        configuration.setMaxAge(3600L);
+//        // Headers exposed to frontend
+//        configuration.setExposedHeaders(
+//                List.of(
+//                        "Set-Cookie"
+//                )
+//        );
+//
+//        // Cache preflight response
+//        configuration.setMaxAge(3600L);
 
 
         UrlBasedCorsConfigurationSource source =

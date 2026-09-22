@@ -26,13 +26,10 @@ public class GithubOAuth2UserService extends DefaultOAuth2UserService {
         String accessToken =
                 userRequest.getAccessToken().getTokenValue();
 
-        String scopes =
-                userRequest.getAccessToken().getScopes() != null
-                        ? String.join(
-                        ",",
-                        userRequest.getAccessToken().getScopes()
-                )
-                        : "read:user,repo";
+        String scopes = String.join(
+                ",",
+                userRequest.getAccessToken().getScopes()
+        );
 
         User userEntity = userService.upsertFromGithub(
                 oauth2User.getAttributes(),
