@@ -15,15 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/auth/")
+@RequestMapping("/auth/")
 @RequiredArgsConstructor
 public class AuthController {
     private final CurrentUser currentUser;
 
 
-    @GetMapping("login-url")
+    @GetMapping("login")
     public Map<String,String> loginUrl() {
-        return Map.of("url", "/oauth/authorization/github");
+        return Map.of("url", "/oauth2/authorization/github");
     }
 
     @GetMapping("/me")

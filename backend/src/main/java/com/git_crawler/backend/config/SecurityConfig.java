@@ -48,7 +48,8 @@ public class SecurityConfig {
                                 "/auth/**",
                                 "/login/**",
                                 "/oauth2/**",
-                                "/error"
+                                "/error",
+                                "/health"
                         ).permitAll()
 
                         // CORS preflight
@@ -66,11 +67,13 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
 
-                // Session-based OAuth2 authentication
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.IF_REQUIRED
                         )
+                )
+                .securityContext(securityContext ->
+                        securityContext.requireExplicitSave(false)
                 )
 
                 // Return 401 instead of redirecting to login
@@ -123,27 +126,56 @@ public class SecurityConfig {
     public static AuthenticationSuccessHandler oauth2SuccessHandler(
             @Value("${app.frontend-url}") String frontendUrl
     ) {
+        return (request, response, authentication) -> {
 
-        SimpleUrlAuthenticationSuccessHandler successHandler =
-                new SimpleUrlAuthenticationSuccessHandler();
+            System.out.println("\n=== OAUTH SUCCESS DEBUG ===");
 
-        successHandler.setDefaultTargetUrl(
-                frontendUrl + "/auth/callback"
-        );
+            System.out.println("Authentication: " + authentication);
 
-        return successHandler;
+            System.out.println(
+                    "Authentication class: "
+                            + authentication.getClass().getName()
+            );
+
+            System.out.println(
+                    "Principal: "
+                            + authentication.getPrincipal()
+            );
+
+            System.out.println(
+                    "Principal class: "
+                            + authentication.getPrincipal()
+                            .getClass()
+                            .getName()
+            );
+
+            System.out.println(
+                    "Authenticated: "
+                            + authentication.isAuthenticated()
+            );
+
+            System.out.println(
+                    "Session ID: "
+                            + request.getSession(false)
+            );
+
+            System.out.println("===========================\n");
+
+            response.sendRedirect(
+                    frontendUrl + "/auth/callback"
+            );
+        };
     }
 
     @Bean
     public static AuthenticationFailureHandler oauth2FailureHandler(
             @Value("${app.frontend-url}") String frontendUrl
     ) {
-
         SimpleUrlAuthenticationFailureHandler failureHandler =
                 new SimpleUrlAuthenticationFailureHandler();
 
         failureHandler.setDefaultFailureUrl(
-                frontendUrl + "/login?error=oauth_failed"
+                frontendUrl + "/auth/login?error=oauth_failed"
         );
 
         return failureHandler;

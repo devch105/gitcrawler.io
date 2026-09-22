@@ -1,15 +1,13 @@
 package com.git_crawler.backend.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Data
+@ToString(exclude = {"accessToken"})
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
