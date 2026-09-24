@@ -10,6 +10,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Override
     Optional<User> findById(UUID id);
-    
     Optional<User> findByGithubId(Long githubId);
 }
