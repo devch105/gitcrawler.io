@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+
+import com.git_crawler.backend.entity.IndexStatus;
+import org.springframework.data.domain.PageRequest;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -170,7 +173,25 @@ public class RepoService {
                 .build();
     }
 
-    private RepositoryResponseDTO toResponseDTO(Repository repository) {
+
+    @Transactional(readOnly = true)
+    public List<RepositoryResponseDTO> getRecentlyIndexedRepos(
+            UUID userId,
+            int limit
+    ) {
+        int safeLimit = Math.max(1, Math.min(limit, 20));
+
+        return repositoryRepository
+                .findByUserIdAndIndexStatusAndIndexedAtIsNotNullOrderByIndexedAtDesc(
+                        userId,
+                        IndexStatus.DONE,
+                        PageRequest.of(0, safeLimit)
+                )
+                .stream()
+                .map(this::toResponseDTO)
+                .toList();
+    }
+    public RepositoryResponseDTO toResponseDTO(Repository repository) {
 
         return RepositoryResponseDTO.builder()
                 .id(repository.getId())

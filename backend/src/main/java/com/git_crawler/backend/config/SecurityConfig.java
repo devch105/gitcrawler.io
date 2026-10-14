@@ -19,6 +19,8 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
+import static reactor.netty.http.HttpConnectionLiveness.log;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -46,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/auth/login",
+                                "/auth/logout",
                                 "/login/**",
                                 "/oauth2/**",
                                 "/error",
@@ -112,7 +115,7 @@ public class SecurityConfig {
                         .logoutSuccessUrl("/")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
-                        .deleteCookies("GITCRAWLER_SESSION")
+                        .deleteCookies("JSESSIONID")
                 );
 
         return http.build();
