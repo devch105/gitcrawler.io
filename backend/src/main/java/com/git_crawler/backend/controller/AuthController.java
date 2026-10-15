@@ -29,12 +29,23 @@ public class AuthController {
     private final CurrentUser currentUser;
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponseDTO> me() {
+    public ResponseEntity<UserResponseDTO> me(
+            HttpServletRequest request) {
 
-        AppUserPrincipal loggedUser =
-                currentUser.require();
+        var session = request.getSession(false);
 
+        System.out.println("=== AUTH ME REQUEST ===");
+        System.out.println("Session exists: " + (session != null));
+        System.out.println(
+                "Session ID: " +
+                        (session != null ? session.getId() : "none")
+        );
+
+        AppUserPrincipal loggedUser = currentUser.require();
         User user = loggedUser.getUser();
+
+        System.out.println("Current user resolved successfully");
+        System.out.println("========================");
 
         return ResponseEntity.ok(
                 new UserResponseDTO(
