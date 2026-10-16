@@ -6,20 +6,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-
-import static reactor.netty.http.HttpConnectionLiveness.log;
+import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -28,160 +21,28 @@ public class SecurityConfig {
 
     private final GithubOAuth2UserService githubOAuth2UserService;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            AuthenticationSuccessHandler oauth2SuccessHandler,
-            AuthenticationFailureHandler oauth2FailureHandler
-    ) throws Exception {
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
-        http
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
                 .cors(Customizer.withDefaults())
-
-                // REST API
-                .csrf(csrf -> csrf.disable())
-
-                // Authorization
+                .csrf(csrf -> csrf.disable())   // only safe with SameSite=Lax + same-site deploy
                 .authorizeHttpRequests(auth -> auth
-
-                        // Public endpoints
-                        .requestMatchers(
-                                "/",
-                                "/auth/login",
-                                "/auth/logout",
-                                "/login/**",
-                                "/oauth2/**",
-                                "/error",
-                                "/health"
-                        ).permitAll()
-
-                        // CORS preflight
-                        .requestMatchers(
-                                HttpMethod.OPTIONS,
-                                "/**"
-                        ).permitAll()
-
-                        // Current user requires authentication
-                        .requestMatchers("/auth/me").authenticated()
-
-                        // API requires authentication
-                        .requestMatchers("/api/**").authenticated()
-
-                        // Everything else
-                        .anyRequest().permitAll()
-                )
-
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.IF_REQUIRED
-                        )
-                )
-                .securityContext(securityContext ->
-                        securityContext.requireExplicitSave(false)
-                )
-
-                // Return 401 instead of redirecting to login
-                .exceptionHandling(ex ->
-                        ex.authenticationEntryPoint(
-                                new HttpStatusEntryPoint(
-                                        HttpStatus.UNAUTHORIZED
-                                )
-                        )
-                )
-
-                // GitHub OAuth2
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**", "/error", "/health").permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(
+                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .oauth2Login(oauth2 -> oauth2
-
-                        .userInfoEndpoint(userInfo ->
-                                userInfo.userService(
-                                        githubOAuth2UserService
-                                )
-                        )
-
-                        // Successful OAuth login
-                        .successHandler(
-                                oauth2SuccessHandler
-                        )
-
-                        // Failed OAuth login
-                        .failureHandler(
-                                oauth2FailureHandler
-                        )
-                )
-
-                // Logout
+                        .userInfoEndpoint(u -> u.userService(githubOAuth2UserService))
+                        .successHandler((req, res, auth) -> res.sendRedirect(frontendUrl + "/auth/callback"))
+                        .failureHandler((req, res, ex) ->
+                                res.sendRedirect(frontendUrl + "/auth/login?error=oauth_failed")))
                 .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .logoutSuccessUrl("/")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .deleteCookies("JSESSIONID")
-                );
-
-        return http.build();
-    }
-
-    /*
-     * Static @Bean methods prevent SecurityConfig itself from becoming
-     * part of the dependency chain for these handlers.
-     */
-
-    @Bean
-    public static AuthenticationSuccessHandler oauth2SuccessHandler(
-            @Value("${app.frontend-url}") String frontendUrl
-    ) {
-        return (request, response, authentication) -> {
-
-            System.out.println("\n=== OAUTH SUCCESS DEBUG ===");
-
-            System.out.println("Authentication: " + authentication);
-
-            System.out.println(
-                    "Authentication class: "
-                            + authentication.getClass().getName()
-            );
-
-            System.out.println(
-                    "Principal: "
-                            + authentication.getPrincipal()
-            );
-
-            System.out.println(
-                    "Principal class: "
-                            + authentication.getPrincipal()
-                            .getClass()
-                            .getName()
-            );
-
-            System.out.println(
-                    "Authenticated: "
-                            + authentication.isAuthenticated()
-            );
-
-            System.out.println(
-                    "Session ID: "
-                            + request.getSession(false)
-            );
-
-            System.out.println("===========================\n");
-
-            response.sendRedirect(
-                    frontendUrl + "/auth/callback"
-            );
-        };
-    }
-
-    @Bean
-    public static AuthenticationFailureHandler oauth2FailureHandler(
-            @Value("${app.frontend-url}") String frontendUrl
-    ) {
-        SimpleUrlAuthenticationFailureHandler failureHandler =
-                new SimpleUrlAuthenticationFailureHandler();
-
-        failureHandler.setDefaultFailureUrl(
-                frontendUrl + "/auth/login?error=oauth_failed"
-        );
-
-        return failureHandler;
+                        .logoutUrl("/auth/logout")
+                        .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler())
+                        .deleteCookies("JSESSIONID"))
+                .build();
     }
 }

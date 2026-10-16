@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 
 
@@ -112,11 +113,16 @@ public class RepoService {
 
         }
 
+        user.setReposSyncedAt(Instant.now());
         return saved.stream().sorted((a,b)-> a.getFullName().compareToIgnoreCase(b.getFullName()))
                 .map(this::toResponseDTO)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public boolean needsInitialSync(UUID userId) {
+        return userService.requiredById(userId).getReposSyncedAt() == null;
+    }
 
     @Transactional(readOnly = true)
     public List<RepositoryResponseDTO> listRepos(UUID userId) {

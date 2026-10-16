@@ -26,15 +26,19 @@ public class RepoController {
     private final IndexingService indexingService;
 
     @GetMapping
-    public ResponseEntity<List<RepositoryResponseDTO>> listRepos(@RequestParam(name = "refresh", defaultValue = "true")
-                                                                 boolean refresh) {
+    public ResponseEntity<List<RepositoryResponseDTO>> listRepos() {
         UUID userId = currentUser.require().getId();
 
-        if(refresh) {
-            return ResponseEntity.ok(repoService.syncAndListRepo(userId));
+        if (repoService.needsInitialSync(userId)) {
+            return ResponseEntity.ok(repoService.syncAndListRepo(userId)); // first time only
         }
         return ResponseEntity.ok(repoService.listRepos(userId));
+    }
 
+    @PostMapping("/sync")
+    public ResponseEntity<List<RepositoryResponseDTO>> syncRepos() {
+        UUID userId = currentUser.require().getId();
+        return ResponseEntity.ok(repoService.syncAndListRepo(userId));
     }
 
     @GetMapping("/{id:[0-9a-fA-F-]{36}}")
@@ -87,4 +91,6 @@ public class RepoController {
                 repoService.getRecentlyIndexedRepos(userId, limit)
         );
     }
+
+  
 }

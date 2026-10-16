@@ -72,6 +72,9 @@ public class User {
     )
     private Instant createdAt;
 
+    @Column(name = "repos_synced_at")
+    private Instant reposSyncedAt;
+
     @PrePersist
     void onCreate() {
         if (createdAt == null) {
