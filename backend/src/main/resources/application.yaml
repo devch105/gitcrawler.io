@@ -61,5 +61,5 @@ server:
   servlet:
     session:
       cookie:
-        same-site: lax
+        same-site: ${COOKIE_SAMESITE:lax}
         secure: ${COOKIE_SECURE:true}
