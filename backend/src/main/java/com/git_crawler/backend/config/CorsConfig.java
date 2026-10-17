@@ -49,15 +49,15 @@ public class CorsConfig {
         // Allow session cookies
         configuration.setAllowCredentials(true);
 
-        // Headers exposed to frontend
-        configuration.setExposedHeaders(
-                List.of(
-                        "Set-Cookie"
-                )
-        );
-
-        // Cache preflight response
-        configuration.setMaxAge(3600L);
+//        // Headers exposed to frontend
+//        configuration.setExposedHeaders(
+//                List.of(
+//                        "Set-Cookie"
+//                )
+//        );
+//
+//        // Cache preflight response
+//        configuration.setMaxAge(3600L);
 
 
         UrlBasedCorsConfigurationSource source =
