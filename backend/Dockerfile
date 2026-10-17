@@ -1,15 +1,21 @@
-
-# Stage 1: Build the Spring Boot application
+# Stage 1: Build
 FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
+# Copy Maven configuration first
 COPY pom.xml .
+
+# Download dependencies separately for better caching
+RUN mvn -B -ntp dependency:go-offline
+
+# Copy source code
 COPY src ./src
 
-RUN mvn -B clean package -DskipTests
+# Build the application
+RUN mvn -B -ntp clean package -DskipTests
 
-# Stage 2: Run the application with Java 21
+# Stage 2: Run
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
