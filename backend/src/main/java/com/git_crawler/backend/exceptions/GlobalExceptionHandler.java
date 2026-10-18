@@ -2,11 +2,13 @@ package com.git_crawler.backend.exceptions;
 
 
 
+import com.sun.jdi.request.InvalidRequestStateException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.InvalidClassException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,6 +63,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(status)
                 .body(response);
+    }
+
+    @ExceptionHandler(GithubTokenInvalidException.class)
+    public ResponseEntity<Map<String, Object>> invalidTokenException(
+            GithubTokenInvalidException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "code", "GITHUB_TOKEN_INVALID",
+                        "message", ex.getMessage()
+                ));
     }
 }
 

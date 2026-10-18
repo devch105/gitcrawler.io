@@ -8,9 +8,11 @@ import com.git_crawler.backend.services.RepoService;
 import com.git_crawler.backend.services.indexing.IndexingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -74,7 +76,12 @@ public class RepoController {
 
         Repository repo = indexingService.startIndexing(id, userId);
 
-        indexingService.indexAsync(id, userId);
+        try{
+            indexingService.indexAsync(id, userId);
+        }catch (TaskRejectedException e){
+            indexingService.markFailed(id,"Server is Busy. please try again later");
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"Server is Busy. please try again later");
+        }
 
         return ResponseEntity.ok(
                 repoService.toResponseDTO(repo)
