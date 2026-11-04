@@ -14,8 +14,10 @@ import com.git_crawler.backend.services.ai.CitationMapper;
 import com.git_crawler.backend.services.ai.CodeContextRetriever;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.git_crawler.backend.dto.RecentChatResponse;
 import org.springframework.data.domain.PageRequest;
@@ -176,5 +178,22 @@ public class ChatService {
                 userId,
                 PageRequest.of(0, safeLimit)
         );
+    }
+    @Transactional
+    public void deleteSession(UUID userId, UUID sessionId) {
+
+        // First verify that this session belongs to the user
+        ChatSession session = chatSessionRepository
+                .findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Chat session not found"
+                ));
+
+        // Delete all messages belonging to this session
+        chatMessageRepository.deleteBySessionId(sessionId);
+
+        // Delete the chat session
+        chatSessionRepository.delete(session);
     }
 }

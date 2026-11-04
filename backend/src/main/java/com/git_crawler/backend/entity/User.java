@@ -40,6 +40,22 @@ public class User {
     )
     private String githubEmail;
 
+
+    @Column(name = "notification_email", unique = true)
+    private String notificationEmail;
+
+    @Column(name = "pending_notification_email", unique = true)
+    private String pendingNotificationEmail;
+
+    @Column(
+            name = "notification_email_verified",
+            nullable = false,
+            columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE"
+    )
+    @Builder.Default
+    private boolean notificationEmailVerified = false;
+
+    
     @Column(
             name = "display_name",
             length = 100

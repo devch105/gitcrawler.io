@@ -15,6 +15,14 @@ backend/.env
 .env.*
 !.env.example
 
+*.pem
+.env
+
+
+certs/
+.env
+*.pem
+*.jks
 # Logs
 *.log
 

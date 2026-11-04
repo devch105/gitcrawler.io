@@ -32,6 +32,17 @@ public class ChatController {
         );
     }
 
+    @DeleteMapping("/sessions/{id}")
+    public ResponseEntity<Void> deleteSession(
+            @PathVariable UUID id
+    ) {
+        UUID userId = currentUser.require().getId();
+
+        chatService.deleteSession(userId, id);
+
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/sessions")
     public ResponseEntity<List<ChatSessionResponse>> getSessions(
             @RequestParam UUID repositoryId
@@ -43,10 +54,10 @@ public class ChatController {
         );
     }
 
+
+
     @GetMapping("/sessions/{id}")
-    public ResponseEntity<List<ChatMessageResponse>> getMessages(
-            @PathVariable UUID id
-    ) {
+    public ResponseEntity<List<ChatMessageResponse>> getMessages(@PathVariable UUID id) {
         UUID userId = currentUser.require().getId();
 
         return ResponseEntity.ok(
@@ -57,9 +68,7 @@ public class ChatController {
 
 
     @GetMapping("/sessions/recent")
-    public ResponseEntity<List<RecentChatResponse>> getRecentChats(
-            @RequestParam(defaultValue = "5") int limit
-    ) {
+    public ResponseEntity<List<RecentChatResponse>> getRecentChats(@RequestParam(defaultValue = "5") int limit) {
         UUID userId = currentUser.require().getId();
 
         return ResponseEntity.ok(
@@ -67,14 +76,10 @@ public class ChatController {
         );
     }
 
-    @PostMapping(
-            value = "/sessions/{id}/messages",
-            produces = MediaType.TEXT_EVENT_STREAM_VALUE
-    )
-    public SseEmitter sendMessage(
-            @PathVariable UUID id,
-            @Valid @RequestBody ChatMessageRequest request
-    ) {
+
+
+    @PostMapping( value = "/sessions/{id}/messages",  produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter sendMessage( @PathVariable UUID id, @Valid @RequestBody ChatMessageRequest request) {
         UUID userId = currentUser.require().getId();
 
         return chatService.streamReply(
@@ -83,4 +88,5 @@ public class ChatController {
                 request.content()
         );
     }
+
 }

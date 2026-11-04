@@ -60,6 +60,8 @@ public class IndexingService {
     private final GitHubRateLimiter gitHubRateLimiter;
     private final VectorStore vectorStore;
 
+    private final IndexingFinalizationService indexingFinalizationService;
+
     @Value("${app.indexing.max-file-bytes:102400}")
     private long maxFileBytes;
 
@@ -92,39 +94,43 @@ public class IndexingService {
 
     @Async("indexingExecutor")
     public void indexAsync(UUID repoId, UUID userId) {
-
         try {
-
             doIndex(repoId, userId);
 
         } catch (IndexingAbortedException e) {
-
-            // Someone else already moved this repo out of INDEXING. Leave the state alone.
             log.warn("Indexing of repository {} stopped: {}", repoId, e.getMessage());
 
         } catch (IndexingFailedException e) {
-
             log.warn("Indexing of repository {} failed: {}", repoId, e.getMessage());
-            markFailed(repoId, e.getMessage());
+
+            indexingFinalizationService.finalizeFailure(
+                    repoId, userId, e.getMessage()
+            );
 
         } catch (GithubTokenInvalidException e) {
-
             log.warn("GitHub token rejected while indexing repository {}", repoId);
-            markFailed(repoId, MSG_TOKEN);
+
+            indexingFinalizationService.finalizeFailure(
+                    repoId, userId, MSG_TOKEN
+            );
 
         } catch (InterruptedException e) {
-
             Thread.currentThread().interrupt();
+
             log.warn("Indexing of repository {} was interrupted", repoId);
-            markFailed(repoId, MSG_INTERRUPTED);
+
+            indexingFinalizationService.finalizeFailure(
+                    repoId, userId, MSG_INTERRUPTED
+            );
 
         } catch (Exception e) {
-
             log.error("Error indexing repository {}", repoId, e);
-            markFailed(repoId, MSG_GENERIC);
+
+            indexingFinalizationService.finalizeFailure(
+                    repoId, userId, MSG_GENERIC
+            );
         }
     }
-
 
     // =========================================================
     // MAIN INDEXING FLOW
@@ -216,11 +222,15 @@ public class IndexingService {
         }
 
         // 4. Complete
-        int updated = repoRepository.markDone(
-                repoId, total, processed, storedChunks, Instant.now()
+        boolean finalized = indexingFinalizationService.finalizeSuccess(
+                repoId,
+                userId,
+                total,
+                processed,
+                storedChunks
         );
 
-        if (updated == 0) {
+        if (!finalized) {
             throw new IndexingAbortedException(repoId);
         }
 
