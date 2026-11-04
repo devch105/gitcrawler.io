@@ -248,7 +248,7 @@ Never expose OAuth client secrets or database credentials in frontend variables 
 
 ## Related Repository
 
-- **Frontend:** [GitCrawler Frontend](https://github.com/devch105/gitcrawler-frontend)
+- **Frontend:** [GitCrawler Frontend](https://github.com/devch105/gitcralwer-ui)
 
 ## Contributing
 
