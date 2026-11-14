@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 import com.git_crawler.backend.entity.IndexStatus;
@@ -39,23 +40,28 @@ public class RepoService {
     }
 
 
+
     @Transactional
     public List<RepositoryResponseDTO> syncAndListRepo(UUID userId) {
 
         User user = userService.requiredById(userId);
-
         String token = userService.decryptAccessToken(user);
 
+        // 1. Fetch all repositories from GitHub
         List<Map<String, Object>> githubRepos =
                 githubApiClient.listUserRepos(token);
+
         log.info("Number of User Repos found :: {}", githubRepos.size());
+
+        // 2. Collect GitHub repository IDs
+        Set<Long> githubRepoIds = githubRepos.stream()
+                .map(repo -> ((Number) repo.get("id")).longValue())
+                .collect(Collectors.toSet());
+
+        // 3. Save or update repositories
         List<Repository> saved = new ArrayList<>();
-        int counter = 1;
 
         for (Map<String, Object> remoteRepo : githubRepos) {
-
-
-            log.info("GitHub repository response: {}", remoteRepo);
 
             Long githubRepoId =
                     ((Number) remoteRepo.get("id")).longValue();
@@ -63,58 +69,52 @@ public class RepoService {
             Map<String, Object> owner =
                     (Map<String, Object>) remoteRepo.get("owner");
 
-            Repository savedRepo =
-                    repositoryRepository
-                            .findByUserIdAndGithubRepoId(userId, githubRepoId)
-                            .orElseGet(Repository::new);
+            Repository savedRepo = repositoryRepository
+                    .findByUserIdAndGithubRepoId(userId, githubRepoId)
+                    .orElseGet(Repository::new);
 
             savedRepo.setUserId(userId);
             savedRepo.setGithubRepoId(githubRepoId);
+            savedRepo.setName((String) remoteRepo.get("name"));
+            savedRepo.setDescription((String) remoteRepo.get("description"));
+            savedRepo.setOwner((String) owner.get("login"));
+            savedRepo.setFullName((String) remoteRepo.get("full_name"));
+            savedRepo.setPrivate(Boolean.TRUE.equals(remoteRepo.get("private")));
+            savedRepo.setDefaultBranch((String) remoteRepo.get("default_branch"));
+            savedRepo.setLanguage((String) remoteRepo.get("language"));
+            savedRepo.setHtmlUrl((String) remoteRepo.get("html_url"));
+            savedRepo.setCloneUrl((String) remoteRepo.get("clone_url"));
 
-            savedRepo.setName(
-                    (String) remoteRepo.get("name")
-            );
+            // Reactivate if it was previously deactivated
+            savedRepo.setActive(true);
 
-            savedRepo.setDescription(
-                    (String) remoteRepo.get("description")
-            );
-
-            savedRepo.setOwner(
-                    (String) owner.get("login")
-            );
-
-            savedRepo.setFullName(
-                    (String) remoteRepo.get("full_name")
-            );
-
-            savedRepo.setPrivate(
-                    Boolean.TRUE.equals(remoteRepo.get("private"))
-            );
-
-            savedRepo.setDefaultBranch(
-                    (String) remoteRepo.get("default_branch")
-            );
-
-            savedRepo.setLanguage(
-                    (String) remoteRepo.get("language")
-            );
-
-            savedRepo.setHtmlUrl(
-                    (String) remoteRepo.get("html_url")
-            );
-
-            savedRepo.setCloneUrl(
-                    (String) remoteRepo.get("clone_url")
-            );
-
-            log.info("Saving Repos {}", counter );
             saved.add(repositoryRepository.save(savedRepo));
-            counter++;
-
         }
 
+        // 4. Deactivate repositories no longer returned by GitHub
+        if (!githubRepoIds.isEmpty()) {
+
+            int deactivated =
+                    repositoryRepository.deactivateMissingRepositories(
+                            userId,
+                            githubRepoIds
+                    );
+
+            log.info(
+                    "Deactivated {} repositories missing from GitHub",
+                    deactivated
+            );
+        }
+
+        // 5. Update last synchronization timestamp
         user.setReposSyncedAt(Instant.now());
-        return saved.stream().sorted((a,b)-> a.getFullName().compareToIgnoreCase(b.getFullName()))
+
+        // 6. Return only active repositories
+        return saved.stream()
+                .sorted(Comparator.comparing(
+                        Repository::getFullName,
+                        String.CASE_INSENSITIVE_ORDER
+                ))
                 .map(this::toResponseDTO)
                 .toList();
     }
@@ -126,7 +126,9 @@ public class RepoService {
 
     @Transactional(readOnly = true)
     public List<RepositoryResponseDTO> listRepos(UUID userId) {
-        return repositoryRepository.findByUserIdOrderByFullNameAsc(userId).stream()
+        return repositoryRepository
+                .findByUserIdAndActiveTrueOrderByFullNameAsc(userId)
+                .stream()
                 .map(this::toResponseDTO)
                 .toList();
     }

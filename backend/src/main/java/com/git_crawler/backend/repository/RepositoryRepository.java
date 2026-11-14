@@ -5,9 +5,7 @@ import com.git_crawler.backend.entity.Repository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 
 // Imports needed:
@@ -16,9 +14,25 @@ import java.util.UUID;
    import org.springframework.data.repository.query.Param;
    import org.springframework.transaction.annotation.Transactional;
    import java.time.Instant;
-   import java.util.UUID;
 
 public interface RepositoryRepository extends JpaRepository<Repository, UUID> {
+
+    @Transactional
+    @Modifying
+    @Query("""
+    update Repository r
+       set r.active = false
+     where r.userId = :userId
+       and r.active = true
+       and r.githubRepoId not in :githubRepoIds
+    """)
+    int deactivateMissingRepositories(
+            @Param("userId") UUID userId,
+            @Param("githubRepoIds") Set<Long> githubRepoIds
+    );
+    List<Repository> findByUserIdAndActiveTrueOrderByFullNameAsc(UUID userId);
+
+
 
     List<Repository> findByUserIdOrderByFullNameAsc(UUID userId);
 

@@ -47,7 +47,8 @@ public class Repository {
     // -------------------------
     // GitHub information
     // -------------------------
-
+    @Column(nullable = false)
+    private boolean active = true;
     @Column(
             name = "github_repo_id",
             nullable = false
