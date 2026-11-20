@@ -1,0 +1,33 @@
+
+name: Render Backend Health Check
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: "*/10 * * * *"
+
+  # Allow manual execution from GitHub Actions
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Render Backend
+        run: |
+          URL="https://gitcrawler-io-lfmc.onrender.com/health"
+
+          echo "Pinging Render backend..."
+
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 60 "$URL")
+
+          echo "HTTP Status: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "Backend is healthy!"
+          else
+            echo "Backend health check failed!"
+            exit 1
+          fi
